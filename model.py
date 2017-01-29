@@ -41,7 +41,8 @@ def gen_data(steering, center_img_names, img_dir, batch_size=32, test_size=0.1, 
 
         while len(labels) < batch_size:
             i = np.random.randint(total)
-            image_name = center_img_names[i].split('/')[-1]
+            image_path = center_img_names[i].replace('\\', '/')
+            image_name = image_path.split('/')[-1]
             image = skimage.io.imread(img_dir + image_name)
             steering_angle = steering[i]
             
