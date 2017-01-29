@@ -1,7 +1,6 @@
 import tensorflow as tf
 import numpy as np
-import csv
-import os
+import cv2
 import skimage.io
 from sklearn import preprocessing
 
@@ -49,9 +48,9 @@ def gen_data(steering, center_img_names, img_dir, batch_size=32, test_size=0.1, 
             steering_angle = steering[i]
             
             # 50% chance to flip image
-            # if np.random.randint(2) == 1:
-            #     image = cv2.flip(image, 1)
-            #     steering_angle = -steering_angle
+            if np.random.randint(2) == 1:
+                image = cv2.flip(image, 1)
+                steering_angle = -steering_angle
 
             features.append(image)
             labels.append(steering_angle)
@@ -106,7 +105,7 @@ def main(_):
 
     data = np.append(steering_angles.T, center_image_names.T, axis=1)
     np.random.shuffle(data)
-    steering_angles = data.T[0]
+    steering_angles = data.T[0].astype(np.float64)
     center_image_names = data.T[1]
 
     input_shape = (160, 320, 3)
