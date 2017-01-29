@@ -18,8 +18,6 @@ FLAGS = flags.FLAGS
 # Command line flags
 flags.DEFINE_integer('epochs', 10, "The number of epochs.")
 flags.DEFINE_integer('batch_size', 32, "The batch size.")
-# flags.DEFINE_integer('training_size', 1000, "Number of samples to process before going to the next epoch.")
-# flags.DEFINE_integer('val_samples', 100, "Number of samples to use from validation generator at the end of every epoch.")
 
 def normalize_grayscale(image_data):
     a = -0.5
