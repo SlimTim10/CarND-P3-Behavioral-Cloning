@@ -18,23 +18,18 @@ Recording driving data using the simulator takes a very long time, so I decided 
 
 My model is based off of the [NVIDIA CNN architecture](http://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf). The layers are:
 
-- Normalization
-- Convolution (5x5 kernel with 24 output filters, 2x2 stride, ELU activation)
-- Dropout (0.5 probability)
-- Convolution (5x5 kernel with 36 output filters, 2x2 stride, ELU activation)
-- Dropout (0.5 probability)
-- Convolution (5x5 kernel with 48 output filters, 2x2 stride, ELU activation)
-- Dropout (0.5 probability)
-- Convolution (3x3 kernel with 64 output filters, 2x2 stride, ELU activation)
-- Dropout (0.5 probability)
-- Convolution (3x3 kernel with 64 output filters, 2x2 stride, ELU activation)
-- Dropout (0.5 probability)
+- Normalization (to range [-1, 1])
+- Convolution (5x5 kernel with 24 output filters, 2x2 stride, ELU activation, with dropout)
+- Convolution (5x5 kernel with 36 output filters, 2x2 stride, ELU activation, with dropout)
+- Convolution (5x5 kernel with 48 output filters, 2x2 stride, ELU activation, with dropout)
+- Convolution (3x3 kernel with 64 output filters, 2x2 stride, ELU activation, with dropout)
+- Convolution (3x3 kernel with 64 output filters, 2x2 stride, ELU activation, with dropout)
 - Fully connected (100 neurons, ELU activation)
 - Fully connected (50 neurons, ELU activation)
 - Fully connected (10 neurons, ELU activation)
 - Output (1 neuron, ELU activation)
 
-The dropout layers after each convolutional layer are to reduce overfitting. I tried using stochastic gradient descent, but the Adam optimizer is producing better results.
+Each convolutional layer includes dropout to reduce overfitting. I tried using stochastic gradient descent, but the Adam optimizer is producing better results.
 
 To prepare the data, I extract the steering angles and image names from the driving log CSV file, combine them into a matrix and shuffle it, then separate them again.
 
