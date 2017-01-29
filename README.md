@@ -9,7 +9,7 @@ The good team at Udacity has developed a [driving simulator](https://d17h27t6h51
 
 ### Approach
 
-#### Sample driving image
+#### Sample driving image (center camera)
 ![sample driving image](images/center_2016_12_01_13_33_05_599.jpg?raw=true "Center Camera")
 
 `Steering angle: 0.1765823`
