@@ -6,17 +6,21 @@ import skimage.io
 from sklearn import preprocessing
 
 from keras.models import Sequential
-from keras.layers.core import Dense, Activation, Flatten, Dropout
-from keras.layers.convolutional import Convolution2D
-from keras.layers.pooling import MaxPooling2D
+from keras.layers import Dense, Activation, Flatten, Dropout, Lambda, ELU
+from keras.layers import Convolution2D, MaxPooling2D
+from keras.optimizers import SGD, Adam
 from keras.utils import np_utils
+
+from sklearn.model_selection import train_test_split
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # Command line flags
-flags.DEFINE_integer('epochs', 5, "The number of epochs.")
-flags.DEFINE_integer('batch_size', 128, "The batch size.")
+flags.DEFINE_integer('epochs', 10, "The number of epochs.")
+flags.DEFINE_integer('batch_size', 32, "The batch size.")
+# flags.DEFINE_integer('training_size', 1000, "Number of samples to process before going to the next epoch.")
+# flags.DEFINE_integer('val_samples', 100, "Number of samples to use from validation generator at the end of every epoch.")
 
 def normalize_grayscale(image_data):
     a = -0.5
@@ -25,77 +29,141 @@ def normalize_grayscale(image_data):
     grayscale_max = 255
     return a + (((image_data - grayscale_min) * (b - a)) / (grayscale_max - grayscale_min))
 
-def angles_to_labels(angles):
+def gen_data(steering, center_img_names, img_dir, batch_size=32, test_size=0.1, test=False):
     """
-    angles: numpy array of np.float64 angles (from driving_log.csv)
+    steering: numpy array of steering angles (np.float64)
+    center_img_names: numpy array of center image file names (str)
+    img_dir: string for driving data IMG directory
+    batch_size: integer
     """
-    min_angle = -1.0
-    max_angle = 1.0
-    increment = 0.05
+    total = len(steering)
 
-    for i in range(angles.size):
-        label = 0
-        x = min_angle
-        while angles[i] > x and x <= max_angle:
-            label += 1
-            x += increment
-        angles[i] = label
+    while True:
+        features = []
+        labels = []
 
-    return angles
+        while len(labels) < batch_size:
+            i = np.random.randint(total)
+            image_name = center_img_names[i].split('/')[-1]
+            image = skimage.io.imread(img_dir + image_name)
+            steering_angle = steering[i]
+            
+            # 50% chance to flip image
+            # if np.random.randint(2) == 1:
+            #     image = cv2.flip(image, 1)
+            #     steering_angle = -steering_angle
 
-def load_data(driving_log, img_dir):
+            features.append(image)
+            labels.append(steering_angle)
+
+        yield (np.array(features), np.array(labels))
+
+def load_data(img_dir, driving_log):
     """
     driving_log: string for driving_log.csv file
     img_dir: string for driving data IMG directory
     """
     steering_angles = np.genfromtxt(driving_log, delimiter=",", usecols=(3,3), unpack=True, dtype=np.float64)[0]
-    
+
     center_images = []
     for img in os.listdir(img_dir):
         # img_data = normalize_grayscale(skimage.io.imread(img_dir + img, as_grey=True))
         img_data = skimage.io.imread(img_dir + img)
         center_images.append(img_data)
     
-    X_train = np.array(center_images)
-    # X_train = normalize_grayscale(X_train)
-    y_train = steering_angles
-    
-    return X_train, y_train
+    X = np.array(center_images)
+    # X = normalize_grayscale(X_train)
+    y = steering_angles
 
-def main(_):
-    X_train, y_train = load_data('driving_data/driving_log.csv', 'driving_data/IMG/')
+    return X, y
 
-    print("Converting angles to labels")
-    y_train = angles_to_labels(y_train)
-    print("One-hot encoding labels")
-    lb = preprocessing.LabelBinarizer()
-    y_train = lb.fit_transform(y_train)
-
-    print("features shape: {}".format(X_train.shape))
-    print("labels shape: {}".format(y_train.shape))
-    
-    nb_classes = y_train.shape[1]
-    print("Number of classes: {}".format(nb_classes))
-    input_shape = X_train.shape[1:]
-
+def nvidia_model(input_shape):
     # NVIDIA CNN architecture
     # http://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf
     model = Sequential()
-    model.add(Convolution2D(24, 5, 5, border_mode='same', subsample=(2, 2), input_shape=input_shape))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Activation('relu'))
-    model.add(Convolution2D(36, 5, 5, border_mode='same', subsample=(2, 2)))
-    model.add(Convolution2D(48, 5, 5, border_mode='same', subsample=(2, 2)))
-    model.add(Convolution2D(64, 3, 3, border_mode='same'))
-    model.add(Convolution2D(64, 3, 3, border_mode='same'))
+    # Normalization
+    model.add(Lambda(lambda x: x/127.5 - 1.0,
+                     input_shape=input_shape,
+                     name='Normalization'))
+    # # Pooling to reduce training time
+    # model.add(MaxPooling2D(pool_size=(2, 2), border_mode='valid'))
+    # Convolutional layers with dropout to prevent overfitting
+    dropout = 0.5
+    model.add(Convolution2D(24, 5, 5, border_mode='same', subsample=(2, 2), activation='elu'))
+    model.add(Dropout(dropout))
+    model.add(Convolution2D(36, 5, 5, border_mode='same', subsample=(2, 2), activation='elu'))
+    model.add(Dropout(dropout))
+    model.add(Convolution2D(48, 5, 5, border_mode='same', subsample=(2, 2), activation='elu'))
+    model.add(Dropout(dropout))
+    model.add(Convolution2D(64, 3, 3, border_mode='same', subsample=(2, 2), activation='elu'))
+    model.add(Dropout(dropout))
+    model.add(Convolution2D(64, 3, 3, border_mode='same', subsample=(2, 2), activation='elu'))
+    model.add(Dropout(dropout))
+    # Fully connected layers
     model.add(Flatten())
-    model.add(Dense(100, activation='relu'))
-    model.add(Dense(50, activation='relu'))
-    model.add(Dense(10, activation='relu'))
-    model.add(Dense(nb_classes, activation='softmax'))
-    model.compile('adam', 'categorical_crossentropy', ['accuracy'])
-    model.fit(X_train, y_train, batch_size=FLAGS.batch_size, nb_epoch=FLAGS.epochs, validation_split=0.2, shuffle=True)
+    model.add(Dense(100, activation='elu'))
+    model.add(Dropout(dropout))
+    model.add(Dense(50, activation='elu'))
+    model.add(Dropout(dropout))
+    model.add(Dense(10, activation='elu'))
+    model.add(Dropout(dropout))
+    # Output
+    model.add(Dense(1, activation='elu'))
 
+    # opt = SGD()
+    opt = Adam()
+    model.compile(optimizer=opt, loss='mean_squared_error')
+    
+    return model
+
+def main(_):
+    # X, y = load_data('driving_data/IMG/', 'driving_data/driving_log.csv')
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=10)
+
+    # print("features shape: {}".format(X_train.shape))
+    # print("labels shape: {}".format(y_train.shape))
+
+    # input_shape = X_train.shape[1:]
+
+    driving_log = 'driving_data/driving_log.csv'
+    steering_angles = np.array([np.genfromtxt(driving_log, delimiter=',', usecols=(3), unpack=True, dtype=np.float64)])
+    center_image_names = np.array([np.genfromtxt(driving_log, delimiter=',', usecols=(0), unpack=True, dtype=str)])
+    # left_image_names = np.genfromtxt(driving_log, delimiter=',', usecols=(1), unpack=True, dtype=str)[0]
+    # right_image_names = np.genfromtxt(driving_log, delimiter=',', usecols=(2), unpack=True, dtype=str)[0]
+
+    data = np.append(steering_angles.T, center_image_names.T, axis=1)
+    np.random.shuffle(data)
+    steering_angles = data.T[0]
+    center_image_names = data.T[1]
+
+    input_shape = (160, 320, 3)
+    model = nvidia_model(input_shape)
+    model.summary()
+
+    print('Batch size: ', FLAGS.batch_size)
+    print('Epochs: ', FLAGS.epochs)
+
+    test_size = 0.1
+    samples_per_epoch = int(len(steering_angles) - (len(steering_angles) * test_size))
+    nb_val_samples = int(len(steering_angles) * test_size)
+
+    model.fit_generator(
+        gen_data(steering_angles, center_image_names, 'driving_data/IMG/', batch_size=FLAGS.batch_size, test_size=test_size, test=False),
+        samples_per_epoch=samples_per_epoch,
+        nb_epoch=FLAGS.epochs,
+        validation_data=gen_data(steering_angles, center_image_names, 'driving_data/IMG/', batch_size=FLAGS.batch_size, test_size=test_size, test=True),
+        nb_val_samples=nb_val_samples)
+
+
+    # model.fit(X_train, y_train,
+    #           batch_size=FLAGS.batch_size,
+    #           nb_epoch=FLAGS.epochs,
+    #           validation_split=0.1,
+    #           shuffle=True)
+    # score = model.evaluate(X_test, y_test, verbose=0)
+    # print('Test score:', score[0])
+    # print('Test accuracy:', score[1])
+    
     # Save model to JSON file
     json_string = model.to_json()
     json_file = open('model.json', 'w')
