@@ -11,7 +11,6 @@ The good team at Udacity has developed a [driving simulator](https://d17h27t6h51
 
 #### Sample driving image (center camera)
 ![sample driving image](images/center_2016_12_01_13_33_05_599.jpg?raw=true "Center Camera")
-
 `Steering angle: 0.1765823`
 
 Recording driving data using the simulator takes a very long time, so I decided to use the [sample data](https://d17h27t6h515a5.cloudfront.net/topher/2016/December/584f6edd_data/data.zip) that was provided. This data only includes driving in the middle of the lane, thus I have recorded additional data to train for recovery by recording when the car is off the track and recovering properly (on either side of the track).
@@ -37,6 +36,6 @@ For training, I use a generator that is able to split the data into training and
 
 ### Usage
 
-To train the model, run `python model.py --batch_size [integer] --epochs [integer]`. The model is saved as model.json and the weights are saved as model.h5.
+To train the model, run `python model.py --batch_size [integer] --epochs [integer]` with `driving_data` in the same directory. The model is saved as model.json and the weights are saved as model.h5.
 
 To use the model, launch the simulator and enter autonomous mode, then run `python drive.py model.json`.
