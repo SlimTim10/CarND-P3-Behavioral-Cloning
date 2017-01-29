@@ -3,9 +3,16 @@
 
 ### Overview
 
+![Driving Simulator Screenshot](images/simulator.jpg?raw=true "Driving Simulator")
+
 The good team at Udacity has developed a [driving simulator](https://d17h27t6h515a5.cloudfront.net/topher/2017/January/58752736_udacity-sdc-udacity-self-driving-car-simulator-dominique-default-windows-desktop-64-bit-4/udacity-sdc-udacity-self-driving-car-simulator-dominique-default-windows-desktop-64-bit-4.zip) for this project. The goal is to build a convolutional neural network that can learn to drive the track on its own. This means recording lots of driving data in the simulator, then feeding that data into the neural network to train it.
 
 ### Approach
+
+#### Sample driving image
+![sample driving image](images/center_2016_12_01_13_33_05_599.jpg?raw=true "Center Camera")
+
+`Steering angle: 0.1765823`
 
 Recording driving data using the simulator takes a very long time, so I decided to use the [sample data](https://d17h27t6h515a5.cloudfront.net/topher/2016/December/584f6edd_data/data.zip) that was provided. This data only includes driving in the middle of the lane, thus I have recorded additional data to train for recovery by recording when the car is off the track and recovering properly (on either side of the track).
 
@@ -32,8 +39,6 @@ The dropout layers after each convolutional layer are to reduce overfitting. I t
 To prepare the data, I extract the steering angles and image names from the driving log CSV file, combine them into a matrix and shuffle it, then separate them again.
 
 For training, I use a generator that is able to split the data into training and test sets by providing appropriate arguments. This was a challenge because the driving data is neatly ordered, hence the prior shuffling of the data. Inside the generator, each image has a 50% chance of being flipped (along with the steering angle) to provide a better balance of left and right turning data.
-
-*TODO Provide example images from the dataset
 
 ### Usage
 
