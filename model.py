@@ -58,25 +58,6 @@ def gen_data(steering, center_img_names, img_dir, batch_size=32, test_size=0.1, 
 
         yield (np.array(features), np.array(labels))
 
-def load_data(img_dir, driving_log):
-    """
-    driving_log: string for driving_log.csv file
-    img_dir: string for driving data IMG directory
-    """
-    steering_angles = np.genfromtxt(driving_log, delimiter=",", usecols=(3,3), unpack=True, dtype=np.float64)[0]
-
-    center_images = []
-    for img in os.listdir(img_dir):
-        # img_data = normalize_grayscale(skimage.io.imread(img_dir + img, as_grey=True))
-        img_data = skimage.io.imread(img_dir + img)
-        center_images.append(img_data)
-    
-    X = np.array(center_images)
-    # X = normalize_grayscale(X_train)
-    y = steering_angles
-
-    return X, y
-
 def nvidia_model(input_shape):
     # NVIDIA CNN architecture
     # http://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf
@@ -117,14 +98,6 @@ def nvidia_model(input_shape):
     return model
 
 def main(_):
-    # X, y = load_data('driving_data/IMG/', 'driving_data/driving_log.csv')
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=10)
-
-    # print("features shape: {}".format(X_train.shape))
-    # print("labels shape: {}".format(y_train.shape))
-
-    # input_shape = X_train.shape[1:]
-
     driving_log = 'driving_data/driving_log.csv'
     steering_angles = np.array([np.genfromtxt(driving_log, delimiter=',', usecols=(3), unpack=True, dtype=np.float64)])
     center_image_names = np.array([np.genfromtxt(driving_log, delimiter=',', usecols=(0), unpack=True, dtype=str)])
@@ -154,16 +127,6 @@ def main(_):
         validation_data=gen_data(steering_angles, center_image_names, 'driving_data/IMG/', batch_size=FLAGS.batch_size, test_size=test_size, test=True),
         nb_val_samples=nb_val_samples)
 
-
-    # model.fit(X_train, y_train,
-    #           batch_size=FLAGS.batch_size,
-    #           nb_epoch=FLAGS.epochs,
-    #           validation_split=0.1,
-    #           shuffle=True)
-    # score = model.evaluate(X_test, y_test, verbose=0)
-    # print('Test score:', score[0])
-    # print('Test accuracy:', score[1])
-    
     # Save model to JSON file
     json_string = model.to_json()
     json_file = open('model.json', 'w')
