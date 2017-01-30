@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import skimage.io
 from sklearn import preprocessing
+from keras.utils.visualize_util import plot
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten, Dropout, Lambda, ELU
@@ -110,6 +111,7 @@ def main(_):
     input_shape = (160, 320, 3)
     model = nvidia_model(input_shape)
     model.summary()
+    plot(model, to_file='model.png')
 
     print('Batch size: ', FLAGS.batch_size)
     print('Epochs: ', FLAGS.epochs)
