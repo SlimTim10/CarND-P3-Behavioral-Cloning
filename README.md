@@ -29,6 +29,7 @@ My model is based off of the [NVIDIA CNN architecture](http://images.nvidia.com/
 - Output (1 neuron, ELU activation)
 
 Or visually:
+
 ![Model](images/model.png?raw=true "Model")
 
 Each convolutional layer includes dropout to reduce overfitting. I tried using stochastic gradient descent, but the Adam optimizer is producing better results.
