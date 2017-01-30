@@ -30,7 +30,9 @@ My model is based off of the [NVIDIA CNN architecture](http://images.nvidia.com/
 
 Or visually:
 
-![Model](images/model.png?raw=true "Model")
+<p align="center">
+   <img src="images/model.png" alt="Model" height="1000" />
+</p>
 
 Each convolutional layer includes dropout to reduce overfitting. I tried using stochastic gradient descent, but the Adam optimizer is producing better results.
 
